@@ -1,5 +1,5 @@
 GetTrain <- function() {
-  # Downloads competition training data from Kaggle.
+  # Imports competition training data downloaded from Kaggle.
   #
   # Args:
   #   null
