@@ -1,0 +1,13 @@
+define number of dimensional nodes per feature
+define number of hidden layers and nodes per hidden layer
+read row from training set
+find value set for each feature
+if feature value not already in list, add with random value set
+perform feed forward
+perform back propagation with stochastic gradient descent
+update feature values by treating inputs as weights and assuming input values as 1
+then use the invervse sigmoid to find the new value for the inputs
+
+
+read from file in blocks
+iterate through each row in a block
