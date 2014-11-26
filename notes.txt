@@ -11,3 +11,18 @@ then use the invervse sigmoid to find the new value for the inputs
 
 read from file in blocks
 iterate through each row in a block
+
+each layer as specific attributes
+  input
+    - actual value matrix
+    - error matrix
+  hidden
+    - theta matrix
+    - calculated matrix
+    - activation matrix
+    - error matrix
+  output
+    - theta matrix
+    - calculated matrix
+    - activation matrix
+    - error matrix

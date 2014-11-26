@@ -34,3 +34,22 @@ for (feature.name in colnames(train.x)) {
 
 # create layers list
 layers <- list()
+
+# get first observation
+x <- train.x[1, ]
+
+input <- matrix(rep(0, n.input), ncol = 1, nrow = n.input)
+
+# iterate through each feature
+for (i in 1:n.features) {
+  fact <- x[, i]
+  input[(i * n.dims - 1):(i * n.dims), 1] <- as.matrix(
+    if (fact %in% features[[i]]$key) {
+      features[[i]][features[[i]]$key == fact, -1]
+    } else {
+      rndm <- runif(n.dims)
+      features[[i]] <- rbind(features[[i]], data.frame(key = fact, t(rndm)))
+      rndm
+    })
+}
+
