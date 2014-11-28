@@ -22,7 +22,8 @@ layers <- list()
 
 # init theta for all hidden layers
 for (i in 1:n.layers) {
-  i.input <- if (i == 1) {n.input} else {n.nodes} + 1
+  i.input <- if (i == 1) {n.input} else {n.nodes}
+  i.input <- i.input + 1
   i.output <- n.nodes
   layers[[i]] <- list(theta = matrix(runif(crossprod(i.input, i.output)),
                                      ncol = i.output, nrow = i.input))
@@ -61,7 +62,7 @@ for (feature.name in colnames(train.x)) {
 # run through each observation in current batch
 for (i in 1:n.obs) {
   x <- train.x[i, ]  # current x
-  y <- train.y[i, ]  # current y
+  y <- train.y[i]  # current y
 
   # iterate through each feature to get values or add new features
   for (j in 1:n.features) {
