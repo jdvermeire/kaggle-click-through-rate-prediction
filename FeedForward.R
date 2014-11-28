@@ -1,9 +1,10 @@
-FeedForward <- function(input, theta, activation = function(x) {x}) {
+FeedForward <- function(input, theta, activation = function(x) {x}, 
+                        add.bias = TRUE) {
   # Computes the output of one neural network layer.
   #
   # Agrs:
-  #   input: A matrix of input values.
-  #   theta: A matrix of weights.
+  #   input: A matrix of input values (n x m).
+  #   theta: A matrix of weights (n[ + 1] x p).
   #   activation: An activation function (i.e. sigmoid).
   #
   # Returns:
@@ -11,7 +12,11 @@ FeedForward <- function(input, theta, activation = function(x) {x}) {
   
   # TODO(jdvermeire): create error handling process.  Check for matrices and
   #                   conformability.
-  # TODO(jdvermeire): add parameter and process to add bias term.
-  
-  activation(crossprod(theta, input))
+  # add bias term
+  a <- if (add.bias) {
+    rbind(rep(1, dim(input)[2]), input)
+  } else {
+    input
+  }
+  activation(crossprod(theta, a))
 }
