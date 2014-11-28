@@ -3,6 +3,10 @@
 # source files
 source("GetData.R")
 source("LogLoss.R")
+source("Sigmoid.R")
+source("FeedForward.R")
+source("BackProp.R")
+source("AddBias.R")
 
 # define settings
 n.features <- 22  # number of features
@@ -36,12 +40,14 @@ for (feature.name in colnames(train.x)) {
 layers <- list()
 
 # init layers
-layers[[1]] <- list(theta <- matrix(runif(n.nodes^2), ncol = n.nodes, 
-                                    nrow = n.nodes),
-                    error <- matrix(0, ncol = 1, nrow = n.nodes))
+layers[[1]] <- list(theta = matrix(runif(n.nodes^2 + n.nodes), ncol = n.nodes, 
+                                    nrow = n.nodes + 1),
+                    error = matrix(0, ncol = 1, nrow = n.nodes))
 
 # output layer
-layers[[2]] <- list()
+layers[[2]] <- list(theta = matrix(runif(n.nodes + 1), ncol = 1,
+                                   nrow = n.nodes + 1),
+                    error = matrix(0, ncol = 1, nrow = n.nodes))
 
 # get first observation
 x <- train.x[1, ]
@@ -61,3 +67,23 @@ for (i in 1:n.features) {
     })
 }
 
+layers[[1]]$output <- FeedForward(input, layers[[1]]$theta, 
+                                  activation = Sigmoid)
+layers[[2]]$output <- FeedForward(layers[[1]]$output, layers[[2]]$theta,
+                                  activation = Sigmoid)
+
+layers[[2]][c("error", "theta", "prop")] <- BackProp(layers[[2]]$theta, 
+                                            layers[[2]]$output, train.y[1],
+                                            layers[[1]]$output,
+                                            act.grad = function(x) {
+                                              x * (1 - x)
+                                            })[c("error", "theta", "prop")]
+layers[[1]][c("error", "theta", "prop")] <- BackProp(layers[[1]]$theta,
+                                            layers[[1]]$output, 
+                                            layers[[2]]$prop,
+                                            input,
+                                            error = layers[[2]]$prop,
+                                            act.grad = function(x) {
+                                              x * (1 - x)
+                                            })[c("error", "theta", "prop")]
+input <- input + 0.01 * layers[[1]]$prop  #update input layer
