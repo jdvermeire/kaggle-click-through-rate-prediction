@@ -14,15 +14,37 @@ n.dims <- 2  # number of dims per feature
 n.layers <- 1  # number of hidden layers
 n.nodes <- n.features * n.dims  # number of nodes per hidden layer
 n.input <- n.features * n.dims  # number of input nodes
+n.batch <- 1000  # number of observations per batch
+alpha <- 0.1  # learning rate
+
+# create layers list
+layers <- list()
+
+# init theta for all hidden layers
+for (i in 1:n.layers) {
+  i.input <- if (i == 1) {n.input} else {n.nodes} + 1
+  i.output <- n.nodes
+  layers[[i]] <- list(theta = matrix(runif(crossprod(i.input, i.output)),
+                                     ncol = i.output, nrow = i.input))
+}
+# init theta for output layer
+layers[[n.layers + 1]] <- list(theta = matrix(runif(n.nodes + 1), ncol = 1,
+                                              nrow = n.nodes + 1))
+# vector of back prop matrices to update
+back.prop <- c("error", "theta", "prop")
+
+# init input matrix
+input <- matrix(rep(0, n.input), ncol = 1, nrow = n.input)
 
 
 # load data from training
-train <- GetTrain(1000, 0)
+train <- GetTrain(n.batch, 0)
+n.obs <- dim(train)[1]  # number of current observations
 
 # update hour to drop date and convert to factor
 train$hour <- as.factor(substr(as.character(train$hour), 7, 8))
 
-# separate our variables from train
+# separate out variables from train
 train.id <- train$id
 train.y <- train$click
 train.x <- train[, -1:-2]
@@ -36,54 +58,58 @@ for (feature.name in colnames(train.x)) {
                                                   t(runif(n.dims)))
 }
 
-# create layers list
-layers <- list()
+# run through each observation in current batch
+for (i in 1:n.obs) {
+  x <- train.x[i, ]  # current x
+  y <- train.y[i, ]  # current y
 
-# init layers
-layers[[1]] <- list(theta = matrix(runif(n.nodes^2 + n.nodes), ncol = n.nodes, 
-                                    nrow = n.nodes + 1),
-                    error = matrix(0, ncol = 1, nrow = n.nodes))
-
-# output layer
-layers[[2]] <- list(theta = matrix(runif(n.nodes + 1), ncol = 1,
-                                   nrow = n.nodes + 1),
-                    error = matrix(0, ncol = 1, nrow = n.nodes))
-
-# get first observation
-x <- train.x[1, ]
-
-input <- matrix(rep(0, n.input), ncol = 1, nrow = n.input)
-
-# iterate through each feature
-for (i in 1:n.features) {
-  fact <- x[, i]
-  input[(i * n.dims - 1):(i * n.dims), 1] <- as.matrix(
-    if (fact %in% features[[i]]$key) {
-      features[[i]][features[[i]]$key == fact, -1]
+  # iterate through each feature to get values or add new features
+  for (j in 1:n.features) {
+    fact <- x[, j]
+    input[(j * n.dims - 1):(j * n.dims), 1] <- as.matrix(
+      if (fact %in% features[[j]]$key) {
+        features[[j]][features[[j]]$key == fact, -1]
+      } else {
+        rndm <- runif(n.dims)
+        features[[j]] <- rbind(features[[j]], data.frame(key = fact, t(rndm)))
+        rndm
+      })
+  }
+  
+  # feed forward through layers
+  for (j in 1:(n.layers + 1)) {
+    layer.input <- if (j == 1) {input} else {layers[[j - 1]]$output}
+    layers[[j]]$output <- FeedForward(layer.input, layers[[j]]$theta,
+                                      activation = Sigmoid)
+  }
+  
+  # backpropagate error
+  for (j in (n.layers + 1):1) {
+    layer.error <- if (j == n.layers + 1) {
+      y - layers[[j]]$output
     } else {
-      rndm <- runif(n.dims)
-      features[[i]] <- rbind(features[[i]], data.frame(key = fact, t(rndm)))
-      rndm
-    })
+      layers[[j + 1]]$prop
+    }
+    
+    layer.input <- if (j == 1) {
+      input
+    } else {
+      layers[[j - 1]]$output
+    }
+    
+    layers[[j]][back.prop] <- BackProp(layers[[j]]$theta, layers[[j]]$output,
+                                       layer.error, layer.input, alpha = alpha,
+                                       error = layer.error,
+                                       act.grad = function(x) {
+                                         x * (1 - x)
+                                       })[back.prop]
+  }
+  
+  input <- input + 0.01 * layers[[1]]$prop  # update input layer
+  # update feature values
+  for (j in 1:n.features) {
+    fact <- x[, j]  # get current factor
+    features[[j]][features[[j]]$key == fact, -1] <- input[(j * n.dims - 1):(j * n.dims), 1]
+  }
+  
 }
-
-layers[[1]]$output <- FeedForward(input, layers[[1]]$theta, 
-                                  activation = Sigmoid)
-layers[[2]]$output <- FeedForward(layers[[1]]$output, layers[[2]]$theta,
-                                  activation = Sigmoid)
-
-layers[[2]][c("error", "theta", "prop")] <- BackProp(layers[[2]]$theta, 
-                                            layers[[2]]$output, train.y[1],
-                                            layers[[1]]$output,
-                                            act.grad = function(x) {
-                                              x * (1 - x)
-                                            })[c("error", "theta", "prop")]
-layers[[1]][c("error", "theta", "prop")] <- BackProp(layers[[1]]$theta,
-                                            layers[[1]]$output, 
-                                            layers[[2]]$prop,
-                                            input,
-                                            error = layers[[2]]$prop,
-                                            act.grad = function(x) {
-                                              x * (1 - x)
-                                            })[c("error", "theta", "prop")]
-input <- input + 0.01 * layers[[1]]$prop  #update input layer
