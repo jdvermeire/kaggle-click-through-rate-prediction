@@ -35,6 +35,14 @@ for (feature.name in colnames(train.x)) {
 # create layers list
 layers <- list()
 
+# init layers
+layers[[1]] <- list(theta <- matrix(runif(n.nodes^2), ncol = n.nodes, 
+                                    nrow = n.nodes),
+                    error <- matrix(0, ncol = 1, nrow = n.nodes))
+
+# output layer
+layers[[2]] <- list()
+
 # get first observation
 x <- train.x[1, ]
 
