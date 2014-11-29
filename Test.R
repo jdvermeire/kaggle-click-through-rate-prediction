@@ -7,6 +7,7 @@ source("Sigmoid.R")
 source("FeedForward.R")
 source("BackProp.R")
 source("AddBias.R")
+source("LogLoss.R")
 
 # define settings
 n.features <- 22  # number of features
@@ -50,6 +51,9 @@ train.id <- train$id
 train.y <- train$click
 train.x <- train[, -1:-2]
 
+# init y.hat
+train.y.hat <- NULL
+
 # create list to hold feature info
 features <- list()
 
@@ -83,6 +87,9 @@ for (i in 1:n.obs) {
     layers[[j]]$output <- FeedForward(layer.input, layers[[j]]$theta,
                                       activation = Sigmoid)
   }
+  
+  # add current output to y.hat
+  train.y.hat <- c(train.y.hat, layers[[n.layers + 1]]$output)
   
   # backpropagate error
   for (j in (n.layers + 1):1) {
