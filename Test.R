@@ -15,8 +15,9 @@ n.dims <- 2  # number of dims per feature
 n.layers <- 1  # number of hidden layers
 n.nodes <- n.features * n.dims  # number of nodes per hidden layer
 n.input <- n.features * n.dims  # number of input nodes
-n.batch <- 1000  # number of observations per batch
-alpha <- 0.1  # learning rate
+n.batch <- 5000  # number of observations per batch
+n.batches <- 5  # number of batches to iterate through
+alpha <- 0.001  # learning rate
 
 # create layers list
 layers <- list()
@@ -26,12 +27,12 @@ for (i in 1:n.layers) {
   i.input <- if (i == 1) {n.input} else {n.nodes}
   i.input <- i.input + 1
   i.output <- n.nodes
-  layers[[i]] <- list(theta = matrix(runif(crossprod(i.input, i.output)),
+  layers[[i]] <- list(theta = matrix(runif(crossprod(i.input, i.output), -1, 1),
                                      ncol = i.output, nrow = i.input))
 }
 # init theta for output layer
-layers[[n.layers + 1]] <- list(theta = matrix(runif(n.nodes + 1), ncol = 1,
-                                              nrow = n.nodes + 1))
+layers[[n.layers + 1]] <- list(theta = matrix(runif(n.nodes + 1, -1, 1), 
+                                              ncol = 1, nrow = n.nodes + 1))
 # vector of back prop matrices to update
 back.prop <- c("error", "theta", "prop")
 
@@ -51,8 +52,8 @@ train.id <- train$id
 train.y <- train$click
 train.x <- train[, -1:-2]
 
-# init y.hat
-train.y.hat <- NULL
+# init y.hat and y.hat.error
+train.y.hat <- train.y.error <- NULL
 
 # create list to hold feature info
 features <- list()
@@ -60,7 +61,7 @@ features <- list()
 # populate feature list with initial values for each feature
 for (feature.name in colnames(train.x)) {
   features[[feature.name]] <- data.frame(key = train.x[1, feature.name], 
-                                                  t(runif(n.dims)))
+                                                  t(runif(n.dims, -1, 1)))
 }
 
 # run through each observation in current batch
@@ -75,7 +76,7 @@ for (i in 1:n.obs) {
       if (fact %in% features[[j]]$key) {
         features[[j]][features[[j]]$key == fact, -1]
       } else {
-        rndm <- runif(n.dims)
+        rndm <- runif(n.dims, -1, 1)
         features[[j]] <- rbind(features[[j]], data.frame(key = fact, t(rndm)))
         rndm
       })
@@ -113,6 +114,9 @@ for (i in 1:n.obs) {
                                        })[back.prop]
   }
   
+  # add error to error vector
+  train.y.error <- c(train.y.error, LogLoss(train.y[1:j], train.y.hat))
+  
   input <- input + 0.01 * layers[[1]]$prop  # update input layer
   # update feature values
   for (j in 1:n.features) {
@@ -121,3 +125,6 @@ for (i in 1:n.obs) {
   }
   
 }
+
+LogLoss(train.y, train.y.hat)
+plot(train.y.error)
