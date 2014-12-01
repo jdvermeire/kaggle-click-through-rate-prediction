@@ -12,7 +12,7 @@ GetTrain <- function(size = -1, start = 1) {
                  "app_category", "device_id", "device_ip", "device_model",
                  "device_type", "device_conn_type", "C14", "C15", "C16", "C17",
                  "C18", "C19", "C20", "C21")
-  col.classes <- c("character", "integer", "integer", rep("factor", 20))
+  col.classes <- c("character", "integer", "integer", rep("character", 20))
   # read training data in batches
   ans <- read.csv(gzfile("data/train.gz"), col.names = col.names,
                   colClasses = col.classes, nrows = size, skip = start)
