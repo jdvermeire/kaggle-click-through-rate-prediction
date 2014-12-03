@@ -7,7 +7,6 @@ source("Sigmoid.R")
 source("FeedForward.R")
 source("BackProp.R")
 source("AddBias.R")
-source("LogLoss.R")
 source("Settings.R")
 
 # define settings
@@ -17,8 +16,8 @@ n.layers <- 1  # number of hidden layers
 n.nodes <- n.features * n.dims  # number of nodes per hidden layer
 n.input <- n.features * n.dims  # number of input nodes
 n.batch <- 10000  # number of observations per batch
-n.batches <- 500  # number of batches to iterate through
-alpha <- 0.000001  # initial learning rate
+n.batches <- 10  # number of batches to iterate through
+alpha <- 0.0001  # initial learning rate
 
 # create layers list
 layers <- list()
@@ -53,11 +52,14 @@ features <- list()
 # init y vectors
 all.y <- all.y.hat <- all.y.error <- NULL
 
+# define file connection
+conn <- file("data/train.csv", open = "rt")
+
 # iterate through batches
 for(h in 1:n.batches) {
   
   # load data from training
-  train <- GetTrain(n.batch, (h - 1) * n.batch + 1)
+  train <- GetTrain(file = conn, size = n.batch, start = (h - 1) * n.batch + 1)
   n.obs <- dim(train)[1]  # number of current observations
   
   # update hour to drop date and convert to factor
@@ -67,6 +69,9 @@ for(h in 1:n.batches) {
   train.id <- train$id
   train.y <- train$click
   train.x <- train[, c(-1, -2, -12, -13)]
+  
+  # iterate through 10 times
+  for (k in 1:10) {
  
   # init y.hat and y.hat.error
   train.y.hat <- train.y.error <- NULL
@@ -147,12 +152,16 @@ for(h in 1:n.batches) {
     
   }
   print(LogLoss(train.y, train.y.hat))
+  }
   
   # add ys
   all.y <- c(all.y, train.y)
   all.y.hat <- c(all.y.hat, train.y.hat)
   all.y.error <- c(all.y.error, train.y.error)
 }
-LogLoss(all.y, all.y.hat)
+
+close(conn)  # close file connection
+
+print(LogLoss(all.y, all.y.hat))
 plot(all.y.error)
 
